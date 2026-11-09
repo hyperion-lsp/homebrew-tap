@@ -1,0 +1,105 @@
+name: Update formula
+
+# Keeps Formula/hyperion-lsp.rb in sync with the latest release of
+# hyperion-lsp/hyperion-lsp. The release pipeline there attaches a generated
+# `hyperion-lsp.rb` to every release; this workflow copies it here using only
+# this repository's own GITHUB_TOKEN, so no cross-repository secret is needed.
+
+on:
+  schedule:
+    - cron: "17 * * * *"
+  workflow_dispatch:
+  repository_dispatch:
+    types: [release-published]
+
+concurrency:
+  group: update-formula
+  cancel-in-progress: false
+
+permissions:
+  contents: write
+
+env:
+  SOURCE_REPO: hyperion-lsp/hyperion-lsp
+  FORMULA: hyperion-lsp
+
+jobs:
+  update:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    outputs:
+      changed: ${{ steps.commit.outputs.changed }}
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: main
+
+      - name: Fetch the latest release formula
+        id: fetch
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          err="$(mktemp)"
+          # `gh release view` without a tag resolves the latest published,
+          # non-prerelease release.
+          if ! tag="$(gh release view --repo "$SOURCE_REPO" --json tagName --jq .tagName 2>"$err")"; then
+            if grep -qi "release not found" "$err"; then
+              echo "::notice::$SOURCE_REPO has no release yet; nothing to do."
+              echo "found=false" >> "$GITHUB_OUTPUT"
+              exit 0
+            fi
+            cat "$err" >&2
+            exit 1
+          fi
+          mkdir -p "$RUNNER_TEMP/release"
+          gh release download "$tag" --repo "$SOURCE_REPO" \
+            --pattern "$FORMULA.rb" --dir "$RUNNER_TEMP/release" --clobber
+          echo "found=true" >> "$GITHUB_OUTPUT"
+          echo "tag=$tag" >> "$GITHUB_OUTPUT"
+
+      - name: Sanity-check the formula
+        if: steps.fetch.outputs.found == 'true'
+        run: |
+          set -euo pipefail
+          f="$RUNNER_TEMP/release/$FORMULA.rb"
+          test -s "$f"
+          ruby -c "$f"
+          grep -q '^class HyperionLsp < Formula' "$f"
+          # Every download must come from the project's own releases.
+          urls="$(grep -E '^\s+url "' "$f" | sed -E 's/.*url "([^"]+)".*/\1/' || true)"
+          test -n "$urls"
+          if printf '%s\n' "$urls" | grep -v "^https://github.com/$SOURCE_REPO/releases/download/"; then
+            echo "::error::formula references a download outside $SOURCE_REPO releases"
+            exit 1
+          fi
+
+      - name: Commit if changed
+        id: commit
+        if: steps.fetch.outputs.found == 'true'
+        env:
+          TAG: ${{ steps.fetch.outputs.tag }}
+        run: |
+          set -euo pipefail
+          mkdir -p Formula
+          cp "$RUNNER_TEMP/release/$FORMULA.rb" "Formula/$FORMULA.rb"
+          if [ -z "$(git status --porcelain -- Formula)" ]; then
+            echo "Formula already up to date ($TAG)."
+            echo "changed=false" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add "Formula/$FORMULA.rb"
+          git commit -m "$FORMULA $TAG"
+          git push origin HEAD:main
+          echo "changed=true" >> "$GITHUB_OUTPUT"
+
+  audit:
+    needs: update
+    if: needs.update.outputs.changed == 'true'
+    permissions:
+      contents: read
+    uses: ./.github/workflows/audit.yml
+    with:
+      ref: main

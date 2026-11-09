@@ -1,0 +1,52 @@
+name: Audit
+
+# `brew style` and `brew audit` for the formulae in this tap. Runs on changes,
+# and after update.yml pushes a new formula (a push made with GITHUB_TOKEN does
+# not start other workflows by itself).
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+  workflow_dispatch:
+  workflow_call:
+    inputs:
+      ref:
+        type: string
+        default: ""
+
+concurrency:
+  group: audit-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  audit:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: ${{ inputs.ref || github.sha }}
+
+      - name: brew style and audit
+        run: |
+          set -euo pipefail
+          shopt -s nullglob
+          formulae=(Formula/*.rb)
+          if [ ${#formulae[@]} -eq 0 ]; then
+            echo "::notice::No formulae yet; nothing to audit."
+            exit 0
+          fi
+          eval "$(/home/linuxbrew/.linuxbrew/bin/brew shellenv)"
+          # Present the checkout to brew as the tap hyperion-lsp/tap.
+          tap_dir="$(brew --repository)/Library/Taps/hyperion-lsp/homebrew-tap"
+          mkdir -p "$(dirname "$tap_dir")"
+          ln -sfn "$GITHUB_WORKSPACE" "$tap_dir"
+          export HOMEBREW_NO_INSTALL_FROM_API=1
+          brew style "${formulae[@]}"
+          for f in "${formulae[@]}"; do
+            brew audit --strict "hyperion-lsp/tap/$(basename "$f" .rb)"
+          done
