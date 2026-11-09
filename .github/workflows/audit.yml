@@ -45,7 +45,7 @@ jobs:
           tap_dir="$(brew --repository)/Library/Taps/hyperion-lsp/homebrew-tap"
           mkdir -p "$(dirname "$tap_dir")"
           ln -sfn "$GITHUB_WORKSPACE" "$tap_dir"
-          export HOMEBREW_NO_INSTALL_FROM_API=1
+          brew trust hyperion-lsp/tap
           brew style "${formulae[@]}"
           for f in "${formulae[@]}"; do
             brew audit --strict "hyperion-lsp/tap/$(basename "$f" .rb)"

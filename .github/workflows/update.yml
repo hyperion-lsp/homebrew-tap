@@ -83,6 +83,9 @@ jobs:
           set -euo pipefail
           mkdir -p Formula
           cp "$RUNNER_TEMP/release/$FORMULA.rb" "Formula/$FORMULA.rb"
+          # The generated formula needs a few fixes to pass `brew audit`.
+          eval "$(/home/linuxbrew/.linuxbrew/bin/brew shellenv)"
+          scripts/polish-formula.sh "Formula/$FORMULA.rb"
           if [ -z "$(git status --porcelain -- Formula)" ]; then
             echo "Formula already up to date ($TAG)."
             echo "changed=false" >> "$GITHUB_OUTPUT"
