@@ -3,22 +3,22 @@ class HyperionLsp < Formula
   homepage "https://github.com/hyperion-lsp/hyperion-lsp"
   if OS.mac?
     if Hardware::CPU.arm?
-      url "https://github.com/hyperion-lsp/hyperion-lsp/releases/download/v0.1.1/hyperion-lsp-aarch64-apple-darwin.tar.xz"
-      sha256 "ea08b851f894df2dc9c5643eb314f3cbba1b44b4e9dc640d0c44bb8781f13f80"
+      url "https://github.com/hyperion-lsp/hyperion-lsp/releases/download/v0.1.2/hyperion-lsp-aarch64-apple-darwin.tar.xz"
+      sha256 "9ca99ce6a145a7af56705b8592a1154efd25d657783e97a1851faebcb8d110f5"
     end
     if Hardware::CPU.intel?
-      url "https://github.com/hyperion-lsp/hyperion-lsp/releases/download/v0.1.1/hyperion-lsp-x86_64-apple-darwin.tar.xz"
-      sha256 "fea37fc4d156ab77e513f9764b430d2004063a6d0a5488139cda2a2d9c71c0fc"
+      url "https://github.com/hyperion-lsp/hyperion-lsp/releases/download/v0.1.2/hyperion-lsp-x86_64-apple-darwin.tar.xz"
+      sha256 "b5d74ee19b3e389284c582c419f17142bad5cb26effc1b8364c79f637dfecc60"
     end
   end
   if OS.linux?
     if Hardware::CPU.arm?
-      url "https://github.com/hyperion-lsp/hyperion-lsp/releases/download/v0.1.1/hyperion-lsp-aarch64-unknown-linux-gnu.tar.xz"
-      sha256 "4e50e708254857220ecb059f00d55a78763ca1344d077432ee825b6d4997764c"
+      url "https://github.com/hyperion-lsp/hyperion-lsp/releases/download/v0.1.2/hyperion-lsp-aarch64-unknown-linux-gnu.tar.xz"
+      sha256 "2d57f7f1d27f6eeab0e4e558f3b49abb0c65491bec86a297ba6e57d2cefd3e6f"
     end
     if Hardware::CPU.intel?
-      url "https://github.com/hyperion-lsp/hyperion-lsp/releases/download/v0.1.1/hyperion-lsp-x86_64-unknown-linux-gnu.tar.xz"
-      sha256 "e5026f86485fc198b5d5698aedba8c96ca9217171c8000864a1575190e006dc7"
+      url "https://github.com/hyperion-lsp/hyperion-lsp/releases/download/v0.1.2/hyperion-lsp-x86_64-unknown-linux-gnu.tar.xz"
+      sha256 "0bcf489f22726da337a3fa73aba5bd42ebde7bbf0b5e5d3742950fe430441bd1"
     end
   end
   # PolyForm Shield 1.0.0 is source-available; Homebrew has no SPDX entry for it.
